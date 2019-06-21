@@ -1,0 +1,7 @@
+**/publish/**
+**/**.obj
+**/**.pdb
+.vs/*
+**/obj/*
+**/credentials
+**/config

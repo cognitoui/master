@@ -1,0 +1,81 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<form asp-page-handler="GetUser" method="post">
+    <div class="form-group">
+        <label for="Username">Username</label>
+        <input type="text" class="form-control" id="Username" name="Username" placeholder="Username" value="@Model.AwsUser?.Username">
+    </div>
+    <button class="btn btn-primary" type="submit">Query</button>
+</form>
+
+
+@if (Model.AwsUser != null)
+{
+    <div style="padding-top:15px;">
+        <h3>User-Actions</h3>
+        <div class="container">
+            <form asp-page-handler="DeleteUser" method="post">
+                <input type="hidden" class="form-control" id="Username" name="Username" placeholder="Username" value="@Model.AwsUser?.Username">
+                <button class="btn btn-primary" type="submit">Delete</button>
+            </form>
+            </div>
+    </div>
+            <p>
+                <h3>User-Attributes</h3>
+                <div class="container">
+                    <div class="row"><div class="col-sm-4">Username</div><div class="col-sm-4">@Model.AwsUser?.Username</div></div>
+                    <div class="row"><div class="col-sm-4">UserCreateDate</div><div class="col-sm-4">@Model.AwsUser?.UserCreateDate</div></div>
+                    <div class="row"><div class="col-sm-4">UserLastModifiedDate</div><div class="col-sm-4">@Model.AwsUser?.UserLastModifiedDate</div></div>
+                    <div class="row"><div class="col-sm-4">UserStatus</div><div class="col-sm-4">@Model.AwsUser?.UserStatus</div></div>
+                    <div class="row"><div class="col-sm-4">Enabled</div><div class="col-sm-4">@Model.AwsUser?.Enabled</div></div>
+
+
+                    @foreach (var attr in Model.AwsUser?.UserAttributes)
+                    {
+                        <div class="row">
+                            <div class="col-sm-4">
+                                @attr.Name
+                            </div>
+                            <div class="col-sm-4">
+                                @attr.Value
+                            </div>
+                        </div>
+                    }
+                </div>
+            </p>
+
+            <div style="padding-top:15px;">
+                <h3>Groups</h3>
+                <div class="container">
+                    @foreach (var group in Model.AwsUserGroups?.Groups)
+                    {
+                        <form asp-page-handler="RemoveUserFromGroup" method="post">
+                            <input type="hidden" name="Username" value="@Model.AwsUser?.Username" />
+                            <input type="hidden" name="Groupname" value="@group.GroupName" />
+                            <div class="row"><div class="col-sm-4"><button class="btn btn-primary btn-xs" type="submit">-</button> @group.GroupName</div></div>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <form asp-page-handler="AddUserToGroup" method="post">
+                <p>
+                    <div class="form-group-sm col-sm-4">
+                        <select name="Groupname" class="form-control">
+                            @foreach (var group in Model.AwsGroups.Groups)
+                            {
+                                <option selected="selected">@group.GroupName</option>
+                            }
+                        </select>
+                        <input type="hidden" name="Username" value="@Model.AwsUser?.Username" />
+                    </div>
+                    <button class="btn btn-primary" type="submit">Add Group</button>
+                </p>
+            </form>
+
+            }
+
