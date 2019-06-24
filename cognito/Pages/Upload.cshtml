@@ -29,7 +29,7 @@
                     "data": "Name",
                     "render": function (data, type, col, meta) {
                         if (col["2"] != "-") {
-                            return "<a href='/Upload?handler=RemoveFile&file=" + data + "'>" + data + "</a>";
+                            return "<button class='glyphicon glyphicon-remove' onClick='javascript:window.location.href=\"/Upload?handler=RemoveFile&file=" + data + "\"'></button> " + data;
         } else {
                 return data;
 

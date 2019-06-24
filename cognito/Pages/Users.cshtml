@@ -16,8 +16,8 @@
     <script src="https://cdn.datatables.net/buttons/1.5.6/js/buttons.print.min.js"></script>
 
     <script>
-        function lazyLoad(table) {
-            if (!$("#PaginationToken").val()) {
+        function lazyLoad(table, override = 0) {
+            if (!$("#PaginationToken").val() && override == 0) {
                 console.log("Empty PaginationToken");
                 return;
             }
@@ -31,7 +31,6 @@
 
                 $.each(data.users, function (i, user) {
                     var email = user.attributes.find(x => x.name == "email").value;
-                    //console.log("email: " + email);
                     console.log(user);
                     table.row.add([
                         email,
@@ -75,9 +74,12 @@
 
                 "columnDefs": [{
                     "targets": 1,
-                    "data": "Username",
-                    "render": function (data, type, col, meta) {
-                        return '<a href="/Index?handler=GetUser&Username=' + data + '">' + data + '</a>';
+                    "render": function (row, type, val, meta) {
+                        if (type == 'display') {
+                            return '<a href="/Index?handler=GetUser&Username=' + val[1] + '">' + val[1] + '</a>';
+                        }
+                        return val;
+
                     }
                 }],
 

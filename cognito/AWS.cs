@@ -29,7 +29,7 @@ namespace cognito.Pages
 
         public AWSUserGroupListModel GetUserGroups(string Username)
         {
-            var user = JsonConvert.DeserializeObject<AWSUserGroupListModel>(RunCommand($"admin-list-groups-for-user --username {Username}"));
+            var user = JsonConvert.DeserializeObject<AWSUserGroupListModel>(RunCommand($"admin-list-groups-for-user --username {Username}").Item2);
             return user;
         }
 
@@ -40,22 +40,22 @@ namespace cognito.Pages
 
         public void AddUserToGroup(string Username, string Groupname)
         {
-            var user = JsonConvert.DeserializeObject<AWSUserGroupListModel>(RunCommand($"admin-add-user-to-group --username {Username} --group-name {Groupname}"));
+            var user = JsonConvert.DeserializeObject<AWSUserGroupListModel>(RunCommand($"admin-add-user-to-group --username {Username} --group-name {Groupname}").Item2);
         }
         public void RemoveUserFromGroup(string Username, string Groupname)
         {
-            var user = JsonConvert.DeserializeObject<AWSUserGroupListModel>(RunCommand($"admin-remove-user-from-group --username {Username} --group-name {Groupname}"));
+            var user = JsonConvert.DeserializeObject<AWSUserGroupListModel>(RunCommand($"admin-remove-user-from-group --username {Username} --group-name {Groupname}").Item2);
         }
 
         public AWSGroupListModel GetGroups()
         {
-            var user = JsonConvert.DeserializeObject<AWSGroupListModel>(RunCommand($"list-groups"));
+            var user = JsonConvert.DeserializeObject<AWSGroupListModel>(RunCommand($"list-groups").Item2);
             return user;
         }
 
         public AWSUserModel GetUser(string Username)
         {           
-            var user = JsonConvert.DeserializeObject<AWSUserModel>(RunCommand($"admin-get-user --username {Username}"));
+            var user = JsonConvert.DeserializeObject<AWSUserModel>(RunCommand($"admin-get-user --username {Username}").Item2);
             return user;
         }
 
@@ -72,7 +72,7 @@ namespace cognito.Pages
             {
                 add = $"--pagination-token {PaginationToken}";
             }
-            var users = JsonConvert.DeserializeObject<AWSUsersModel>(RunCommand($"list-users {add}"));
+            var users = JsonConvert.DeserializeObject<AWSUsersModel>(RunCommand($"list-users {add}").Item2);
             Users?.Add(users);
             return users;
         }
@@ -80,14 +80,19 @@ namespace cognito.Pages
         public bool UploadFile(string Filename, string Bucket, string BucketFilename)
         {
             var back = RunCommand($"cp " + Filename + " s3://" + Bucket + "/" + BucketFilename, "s3");
-            if (back.StartsWith("upload")) return true;
+            if (back.Item1 == 0 && back.Item2.Contains("upload")) return true;
             return false;
         }
 
         public List<string[]> GetS3Files(string Bucket)
         {
             List<string[]> f = new List<string[]>();
-            var files = RunCommand($"ls s3://" + Bucket, "s3");
+            var cmd = RunCommand($"ls s3://" + Bucket, "s3");
+
+            if (cmd.Item1 != 0 || cmd.Item3.Length > 0) return f;
+
+            var files = cmd.Item2;
+
             files = files.Replace('\r', '\n').Replace("\n\n", "\n");
             foreach (var line in files.Split('\n'))
             {
@@ -114,7 +119,7 @@ namespace cognito.Pages
         public bool DeleteS3File(string File)
         {
             var r = RunCommand($"rm s3://" + File, "s3");
-            if (r.StartsWith("delete")) return true;
+            if (r.Item1 == 0 && r.Item2.Contains("delete")) return true;
             return false;
         }
 
@@ -131,7 +136,7 @@ namespace cognito.Pages
             {
                 add = $"--next-token {NextToken}";
             }
-            var users = JsonConvert.DeserializeObject<AWSUserPoolsModel>(RunCommand($"list-user-pools --max-results 5 {add}"));
+            var users = JsonConvert.DeserializeObject<AWSUserPoolsModel>(RunCommand($"list-user-pools --max-results 5 {add}").Item2);
             UserPools.Add(users);
             if (users?.NextToken != null && users?.NextToken.Length == 0)
             {
@@ -145,21 +150,27 @@ namespace cognito.Pages
 
      
 
-        public string RunCommand(string Command, string Namespace = "cognito-idp")
+        public (int, string, string) RunCommand(string Command, string Namespace = "cognito-idp")
         {
             string UserPoolArg = $"--user-pool-id {UserPoolId}";
             if (Command.StartsWith("list-user-pools") || Namespace != "cognito-idp") UserPoolArg = "";
             var proc = new System.Diagnostics.Process();
-            proc.StartInfo = new System.Diagnostics.ProcessStartInfo { FileName = "aws", Arguments = $"{Namespace} {Command} {UserPoolArg}", CreateNoWindow = true, RedirectStandardOutput = true, UseShellExecute = false };
-            proc.Start();
-
-            var reader = proc.StandardOutput;
             string tx = "";
-            while (!proc.HasExited && reader.Peek() > 0)
+
+            try
             {
-                tx += reader.ReadToEnd();
+                proc.StartInfo = new System.Diagnostics.ProcessStartInfo { FileName = "aws", Arguments = $"{Namespace} {Command} {UserPoolArg}", CreateNoWindow = true, RedirectStandardOutput = true, UseShellExecute = false };
+                proc.Start();
+                var reader = proc.StandardOutput;
+                while (!proc.HasExited && reader.Peek() > 0)
+                {
+                    tx += reader.ReadToEnd();
+                }
+            } catch (Exception E)
+            {
+                return (-1, tx, E.Message);
             }
-            return tx;
+            return (proc.ExitCode, tx, "");
         }
 
     }

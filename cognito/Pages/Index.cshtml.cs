@@ -16,7 +16,6 @@ namespace cognito.Pages
 
         public void OnPostGetUser(string Username)
         {
-            //na-yoshioka@ap.alpen-group.jp
             AwsUser = AWS.Instance.GetUser(Username);
             AwsUserGroups = AWS.Instance.GetUserGroups(Username);
             AwsGroups = AWS.Instance.GetGroups();

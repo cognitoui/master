@@ -20,7 +20,7 @@ namespace cognito.Pages
             AWS.Instance.GetUsers();
         }
 
-        public JsonResult OnGetLoadUsers(string PaginationToken)
+        public JsonResult OnGetLoadUsers(string PaginationToken = "")
         {
             var users = AWS.Instance.GetUsers(PaginationToken);
             return new JsonResult(users);
